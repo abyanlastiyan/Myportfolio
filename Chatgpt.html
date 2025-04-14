@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Motorcycle Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 1rem;
+      color: #333;
+    }
+
+    .dashboard {
+      max-width: 400px;
+      margin: auto;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      background: #f9f9f9;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 0.75rem;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .status {
+      font-weight: bold;
+      color: green;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .small {
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h1>Motorcycle Monitor</h1>
+
+    <div class="card">
+      <h2>Status:</h2>
+      <p class="status">ON</p>
+    </div>
+
+    <div class="card">
+      <h2>Distance Sensor:</h2>
+      <p>18 cm</p>
+    </div>
+
+    <div class="card">
+      <h2>Battery Voltage:</h2>
+      <p>12.4 V</p>
+    </div>
+
+    <div class="card">
+      <h2>MPU6050 X-Axis:</h2>
+      <p>0.15</p>
+    </div>
+
+    <div class="card">
+      <h2>GPS Location:</h2>
+      <p>
+        Latitude: -6.200000<br />
+        Longitude: 106.816666<br />
+        <a href="https://www.google.com/maps?q=-6.200000,106.816666" target="_blank">View on Map</a>
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Relay Control:</h2>
+      <button onclick="toggleRelay()">Toggle Relay</button>
+    </div>
+  </div>
+
+  <script>
+    function toggleRelay() {
+      alert("Relay toggled! (Simulated)");
+      // Di sini kamu bisa kirim ke MQTT broker nanti.
+    }
+  </script>
+</body>
+</html>

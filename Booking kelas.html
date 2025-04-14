@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniClass - University Classroom Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .timer {
+            font-family: 'Courier New', monospace;
+        }
+        .room-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .selected {
+            border: 2px solid #3b82f6;
+            background-color: #eff6ff;
+        }
+        .floor-plan {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+        .floor-button {
+            transition: all 0.3s ease;
+        }
+        .floor-button.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        #student-id-upload {
+            display: none;
+        }
+        .upload-preview {
+            max-height: 150px;
+            display: none;
+        }
+        .building {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e6edff 100%);
+        }
+        .verification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #10b981;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-xl shadow-lg mb-8 p-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h1 class="text-3xl font-bold flex items-center">
+                        <i class="fas fa-university mr-3"></i>UniClass Booking System
+                    </h1>
+                    <p class="text-blue-100 mt-1">Reserve university classrooms with your student ID</p>
+                </div>
+                <div class="bg-white text-blue-600 px-4 py-2 rounded-lg shadow flex items-center">
+                    <i class="fas fa-clock mr-2"></i>
+                    <div>
+                        <div class="text-sm font-semibold">Current Time</div>
+                        <div id="current-time" class="text-xl font-bold timer">00:00:00</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Building and Room Selection -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Building Visualization -->
+                <div class="bg-white rounded-xl shadow-lg p-6 building">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+                        <i class="fas fa-building mr-2"></i>Main Academic Building
+                    </h2>
+                    
+                    <div class="mb-6">
+                        <div class="flex space-x-2 mb-4 overflow-x-auto pb-2">
+                            <button class="floor-button px-4 py-2 rounded-lg border border-gray-300" onclick="selectFloor(7)">7th Floor</button>
+                            <button class="floor-button px-4 py-2 rounded-lg border border-gray-300" onclick="selectFloor(6)">6th Floor</button>
+                            <button class="floor-button px-4 py-2 rounded-lg border border-gray-300" onclick="selectFloor(5)">5th Floor</button>
+                            <button class="floor-button px-4 py-2 rounded-lg border border-gray-300 active" onclick="selectFloor(4)">4th Floor</button>
+                            <button class="floor-button px-4 py-2 rounded-lg border border-gray-300" onclick="selectFloor(3)">3rd Floor</button>
+                            <button class="floor-button px-4 py-2 rounded-lg border border-gray-300" onclick="selectFloor(2)">2nd Floor</button>
+                            <button class="floor-button px-4 py-2 rounded-lg border border-gray-300" onclick="selectFloor(1)">1st Floor</button>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg shadow-inner">
+                            <h3 class="font-semibold mb-3 text-blue-600" id="current-floor">4th Floor Classrooms</h3>
+                            <div class="floor-plan">
+                                <!-- Rooms will be dynamically inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Selection -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center border-b pb-2">
+                        <i class="far fa-calendar-alt mr-2"></i>Select Date & Time
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2 font-medium">Date</label>
+                            <input type="date" id="booking-date" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2 font-medium">Duration</label>
+                            <select id="booking-duration" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="1">1 hour</option>
+                                <option value="2" selected>2 hours</option>
+                                <option value="3">3 hours</option>
+                                <option value="4">4 hours</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 mb-2 font-medium">Start Time</label>
+                        <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '08:00')">08:00</button>
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '09:00')">09:00</button>
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '10:00')">10:00</button>
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '11:00')">11:00</button>
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '13:00')">13:00</button>
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '14:00')">14:00</button>
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '15:00')">15:00</button>
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '16:00')">16:00</button>
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '17:00')">17:00</button>
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '18:00')">18:00</button>
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '19:00')">19:00</button>
+                            <button class="time-slot bg-gray-100 hover:bg-blue-100 text-gray-800 py-2 px-3 rounded-lg border text-sm" onclick="selectStartTime(this, '20:00')">20:00</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Verification -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center border-b pb-2">
+                        <i class="fas fa-id-card mr-2"></i>Student Verification
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2 font-medium">Student ID Number <span class="text-red-500">*</span></label>
+                            <input type="text" id="student-id" placeholder="Enter your student ID" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2 font-medium">Class Origin <span class="text-red-500">*</span></label>
+                            <select id="student-class" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select your class</option>
+                                <option value="CS101">Computer Science 101</option>
+                                <option value="ENG202">Engineering 202</option>
+                                <option value="BUS303">Business 303</option>
+                                <option value="MED404">Medicine 404</option>
+                                <option value="ART505">Arts 505</option>
+                                <option value="LAW606">Law 606</option>
+                                <option value="SCI707">Science 707</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2 font-medium">University Email <span class="text-red-500">*</span></label>
+                        <input type="email" id="student-email" placeholder="your.name@university.edu" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="mb-4 relative">
+                        <label class="block text-gray-700 mb-2 font-medium">Upload Student ID (Front Side) <span class="text-red-500">*</span></label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 transition" onclick="document.getElementById('student-id-upload').click()">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-blue-500 mb-2"></i>
+                            <p class="text-gray-600">Click to upload or drag and drop</p>
+                            <p class="text-sm text-gray-400">JPG, PNG or PDF (max. 5MB)</p>
+                            <img id="upload-preview" class="upload-preview mx-auto mt-3 rounded">
+                        </div>
+                        <input type="file" id="student-id-upload" accept="image/*" onchange="previewUpload(event)">
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" id="agree-terms" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="agree-terms" class="ml-2 block text-sm text-gray-700">
+                            I agree to the <a href="#" class="text-blue-600 hover:underline">terms and conditions</a>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Booking Summary -->
+            <div>
+                <div class="bg-white rounded-xl shadow-lg p-6 sticky top-4">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center border-b pb-2">
+                        <i class="fas fa-clipboard-list mr-2"></i>Booking Summary
+                    </h2>
+                    
+                    <div id="booking-details" class="mb-6 space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Building:</span>
+                            <span id="selected-building" class="font-medium">Main Academic</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Floor:</span>
+                            <span id="selected-floor" class="font-medium">4th</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Room:</span>
+                            <span id="selected-room" class="font-medium">Not selected</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Date:</span>
+                            <span id="selected-date" class="font-medium">Not selected</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Time:</span>
+                            <span id="selected-time" class="font-medium">Not selected</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Duration:</span>
+                            <span id="selected-duration" class="font-medium">Not selected</span>
+                        </div>
+                        <div class="border-t my-3"></div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Class:</span>
+                            <span id="selected-class" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Email:</span>
+                            <span id="selected-email" class="font-medium">-</span>
+                        </div>
+                        <div class="border-t my-3"></div>
+                        <div class="flex justify-between text-lg font-bold">
+                            <span>Total Cost:</span>
+                            <span id="total-cost" class="text-green-600">FREE</span>
+                        </div>
+                    </div>
+                    
+                    <button id="book-button" onclick="processBooking()" class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center" disabled>
+                        <i class="fas fa-calendar-check mr-2"></i>Confirm Booking
+                    </button>
+                    
+                    <div id="active-booking" class="mt-6 hidden">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h3 class="font-bold text-blue-800 mb-2 flex items-center">
+                                <i class="fas fa-clock mr-2"></i>Active Booking
+                            </h3>
+                            <div class="space-y-1">
+                                <div class="flex justify-between">
+                                    <span class="text-blue-700">Room:</span>
+                                    <span id="active-room" class="font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-blue-700">Date:</span>
+                                    <span id="active-date" class="font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-blue-700">Time:</span>
+                                    <span id="active-time" class="font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-blue-700">Class:</span>
+                                    <span id="active-class" class="font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-blue-700">Elapsed:</span>
+                                    <span id="elapsed-time" class="font-bold timer">00:00:00</span>
+                                </div>
+                            </div>
+                            <button onclick="endBooking()" class="w-full mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-all duration-300 flex items-center justify-center">
+                                <i class="fas fa-stop-circle mr-2"></i>End Session
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-yellow-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-yellow-700">
+                                    Remember to bring your student ID when using the classroom. Unused bookings may be canceled after 15 minutes.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                    <i class="fas fa-check text-green-600 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Booking Confirmed!</h3>
+                <div class="mt-4 text-sm text-gray-500 space-y-2">
+                    <p>You have successfully booked <span id="modal-room" class="font-bold">Room 401</span></p>
+                    <p>on <span id="modal-date" class="font-bold">Monday, May 15</span></p>
+                    <p>from <span id="modal-time" class="font-bold">10:00 - 12:00</span></p>
+                    <p>Confirmation sent to <span id="modal-email" class="font-bold">your.email@university.edu</span></p>
+                </div>
+                <div class="mt-6">
+                    <button onclick="closeModal()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none transition">
+                        <i class="fas fa-check mr-2"></i>Got it!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let selectedBuilding = "Main Academic";
+        let selectedFloor = 4;
+        let selectedRoom = null;
+        let selectedDate = null;
+        let selectedStartTime = null;
+        let selectedDuration = 2;
+        let selectedClass = null;
+        let selectedEmail = null;
+        let bookingInterval = null;
+        let elapsedSeconds = 0;
+        let studentIdVerified = false;
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            
+            // Set default date to today
+            const today = new Date();
+            const formattedDate = today.toISOString().split('T')[0];
+            document.getElementById('booking-date').value = formattedDate;
+            selectedDate = formattedDate;
+            
+            // Initialize floor rooms
+            generateFloorRooms(4);
+            
+            // Add event listeners
+            document.getElementById('booking-date').addEventListener('change', function() {
+                selectedDate = this.value;
+                updateBookingSummary();
+                validateForm();
+            });
+            
+            document.getElementById('booking-duration').addEventListener('change', function() {
+                selectedDuration = parseInt(this.value);
+                updateBookingSummary();
+                validateForm();
+            });
+            
+            document.getElementById('student-id').addEventListener('input', validateForm);
+            document.getElementById('student-class').addEventListener('change', function() {
+                selectedClass = this.value;
+                updateBookingSummary();
+                validateForm();
+            });
+            document.getElementById('student-email').addEventListener('input', function() {
+                selectedEmail = this.value;
+                updateBookingSummary();
+                validateForm();
+            });
+            document.getElementById('agree-terms').addEventListener('change', validateForm);
+            
+            // Set today as minimum date
+            const todayInput = new Date();
+            todayInput.setDate(todayInput.getDate());
+            const minDate = todayInput.toISOString().split('T')[0];
+            document.getElementById('booking-date').min = minDate;
+            
+            // Set max date (3 months from now)
+            const maxDate = new Date();
+            maxDate.setMonth(maxDate.getMonth() + 3);
+            document.getElementById('booking-date').max = maxDate.toISOString().split('T')[0];
+        });
+
+        // Update current time display
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('current-time').textContent = timeString;
+            
+            // Update elapsed time if there's an active booking
+            if (bookingInterval) {
+                elapsedSeconds++;
+                updateElapsedTimeDisplay();
+            }
+        }
+
+        // Generate rooms for a specific floor
+        function generateFloorRooms(floorNumber) {
+            const floorPlan = document.querySelector('.floor-plan');
+            floorPlan.innerHTML = '';
+            
+            // Create 5 rooms per floor
+            for (let i = 1; i <= 5; i++) {
+                const roomNumber = floorNumber * 100 + i;
+                const roomElement = document.createElement('div');
+                roomElement.className = 'room-card bg-white border rounded-lg p-3 shadow cursor-pointer transition-all duration-300 text-center';
+                roomElement.innerHTML = `
+                    <div class="font-bold text-blue-600 mb-1">${roomNumber}</div>
+                    <div class="text-xs text-gray-500">Capacity: ${20 + i * 5}</div>
+                    <div class="mt-2 text-xs">
+                        <span class="inline-block bg-green-100 text-green-800 px-1 rounded">Available</span>
+                    </div>
+                `;
+                roomElement.onclick = function() { selectRoom(this, roomNumber); };
+                floorPlan.appendChild(roomElement);
+            }
+            
+            // Update current floor display
+            document.getElementById('current-floor').textContent = `${getOrdinal(floorNumber)} Floor Classrooms`;
+        }
+
+        // Select floor
+        function selectFloor(floorNumber) {
+            selectedFloor = floorNumber;
+            
+            // Update floor buttons
+            document.querySelectorAll('.floor-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Generate rooms for selected floor
+            generateFloorRooms(floorNumber);
+            
+            // Update booking summary
+            updateBookingSummary();
+            validateForm();
+        }
+
+        // Select room
+        function selectRoom(element, roomNumber) {
+            // Remove selected class from all rooms
+            document.querySelectorAll('.room-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked room
+            element.classList.add('selected');
+            selectedRoom = roomNumber;
+            
+            // Update booking summary
+            updateBookingSummary();
+            validateForm();
+        }
+
+        // Select start time
+        function selectStartTime(element, time) {
+            // Remove selected class from all time slots
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                slot.classList.remove('bg-blue-100', 'border-blue-500');
+            });
+            
+            // Add selected class to clicked time slot
+            element.classList.add('bg-blue-100', 'border-blue-500');
+            selectedStartTime = time;
+            
+            // Update booking summary
+            updateBookingSummary();
+            validateForm();
+        }
+
+        // Update booking summary
+        function updateBookingSummary() {
+            document.getElementById('selected-building').textContent = selectedBuilding;
+            document.getElementById('selected-floor').textContent = getOrdinal(selectedFloor);
+            document.getElementById('selected-room').textContent = selectedRoom || 'Not selected';
+            document.getElementById('selected-class').textContent = selectedClass || '-';
+            document.getElementById('selected-email').textContent = selectedEmail || '-';
+            
+            if (selectedDate) {
+                const dateObj = new Date(selectedDate);
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('selected-date').textContent = dateObj.toLocaleDateString('en-US', options);
+            } else {
+                document.getElementById('selected-date').textContent = 'Not selected';
+            }
+            
+            if (selectedStartTime && selectedDuration) {
+                const startTime = new Date(`2000-01-01T${selectedStartTime}:00`);
+                const endTime = new Date(startTime.getTime() + selectedDuration * 60 * 60 * 1000);
+                
+                const startTimeStr = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const endTimeStr = endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                document.getElementById('selected-time').textContent = `${startTimeStr} - ${endTimeStr}`;
+                document.getElementById('selected-duration').textContent = `${selectedDuration} hour${selectedDuration > 1 ? 's' : ''}`;
+            } else {
+                document.getElementById('selected-time').textContent = 'Not selected';
+                document.getElementById('selected-duration').textContent = 'Not selected';
+            }
+        }
+
+        // Preview uploaded student ID
+        function previewUpload(event) {
+            const input = event.target;
+            const preview = document.getElementById('upload-preview');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    studentIdVerified = true;
+                    validateForm();
+                    
+                    // Add verification badge
+                    const uploadContainer = input.parentElement;
+                    if (!uploadContainer.querySelector('.verification-badge')) {
+                        const badge = document.createElement('div');
+                        badge.className = 'verification-badge';
+                        badge.innerHTML = '<i class="fas fa-check"></i>';
+                        uploadContainer.appendChild(badge);
+                    }
+                }
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Validate form before enabling book button
+        function validateForm() {
+            const studentId = document.getElementById('student-id').value.trim();
+            const studentClass = document.getElementById('student-class').value;
+            const studentEmail = document.getElementById('student-email').value.trim();
+            const agreeTerms = document.getElementById('agree-terms').checked;
+            const bookButton = document.getElementById('book-button');
+            
+            // Basic email validation
+            const emailValid = studentEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(studentEmail);
+            
+            if (selectedRoom && selectedDate && selectedStartTime && 
+                studentId && studentClass && emailValid && agreeTerms && studentIdVerified) {
+                bookButton.disabled = false;
+            } else {
+                bookButton.disabled = true;
+            }
+        }
+
+        // Process booking
+        function processBooking() {
+            // Show success modal
+            document.getElementById('modal-room').textContent = `Room ${selectedRoom}`;
+            
+            const dateObj = new Date(selectedDate);
+            const options = { weekday: 'long', month: 'short', day: 'numeric' };
+            document.getElementById('modal-date').textContent = dateObj.toLocaleDateString('en-US', options);
+            
+            const startTime = new Date(`2000-01-01T${selectedStartTime}:00`);
+            const endTime = new Date(startTime.getTime() + selectedDuration * 60 * 60 * 1000);
+            
+            const startTimeStr = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const endTimeStr = endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            document.getElementById('modal-time').textContent = `${startTimeStr} - ${endTimeStr}`;
+            document.getElementById('modal-email').textContent = selectedEmail;
+            document.getElementById('success-modal').classList.remove('hidden');
+            
+            // Start active booking session
+            startActiveBooking();
+        }
+
+        // Start active booking session
+        function startActiveBooking() {
+            document.getElementById('active-room').textContent = selectedRoom;
+            document.getElementById('active-class').textContent = selectedClass;
+            
+            const dateObj = new Date(selectedDate);
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('active-date').textContent = dateObj.toLocaleDateString('en-US', options);
+            
+            const startTime = new Date(`2000-01-01T${selectedStartTime}:00`);
+            const endTime = new Date(startTime.getTime() + selectedDuration * 60 * 60 * 1000);
+            
+            const startTimeStr = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const endTimeStr = endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            document.getElementById('active-time').textContent = `${startTimeStr} - ${endTimeStr}`;
+            
+            // Start timer
+            elapsedSeconds = 0;
+            bookingInterval = setInterval(function() {
+                elapsedSeconds++;
+                updateElapsedTimeDisplay();
+            }, 1000);
+            
+            // Show active booking section
+            document.getElementById('active-booking').classList.remove('hidden');
+        }
+
+        // Update elapsed time display
+        function updateElapsedTimeDisplay() {
+            const hours = Math.floor(elapsedSeconds / 3600);
+            const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+            const seconds = elapsedSeconds % 60;
+            
+            const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('elapsed-time').textContent = formattedTime;
+        }
+
+        // End booking session
+        function endBooking() {
+            if (bookingInterval) {
+                clearInterval(bookingInterval);
+                bookingInterval = null;
+            }
+            
+            // Reset form
+            document.querySelectorAll('.room-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                slot.classList.remove('bg-blue-100', 'border-blue-500');
+            });
+            
+            document.getElementById('student-id').value = '';
+            document.getElementById('student-class').value = '';
+            document.getElementById('student-email').value = '';
+            document.getElementById('upload-preview').style.display = 'none';
+            document.getElementById('upload-preview').src = '';
+            document.getElementById('agree-terms').checked = false;
+            document.getElementById('book-button').disabled = true;
+            
+            // Remove verification badge
+            const badge = document.querySelector('.verification-badge');
+            if (badge) badge.remove();
+            
+            selectedRoom = null;
+            selectedDate = null;
+            selectedStartTime = null;
+            selectedClass = null;
+            selectedEmail = null;
+            studentIdVerified = false;
+            
+            updateBookingSummary();
+            
+            // Hide active booking section
+            document.getElementById('active-booking').classList.add('hidden');
+            
+            // Show confirmation
+            alert('Your classroom session has ended. Thank you!');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('success-modal').classList.add('hidden');
+        }
+
+        // Helper function to get ordinal number (1st, 2nd, etc.)
+        function getOrdinal(n) {
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        }
+    </script>
+</body>
+</html>
