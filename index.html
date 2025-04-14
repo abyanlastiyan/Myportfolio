@@ -1,773 +1,942 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Sensor Dashboard</title>
+    <title>Alex | Digital Creator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         
         :root {
-            --primary: #3b82f6;
-            --primary-dark: #2563eb;
-            --secondary: #64748b;
-            --danger: #ef4444;
-            --success: #10b981;
-            --warning: #f59e0b;
+            --primary: #6c63ff;
+            --secondary: #ff6b6b;
+            --accent: #4dffea;
+            --dark: #1a1a2e;
+            --light: #f8f9fa;
         }
         
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            transition: all 0.3s ease;
+        }
+        
+        body.dark {
+            background-color: var(--dark);
+            color: var(--light);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: gradient 8s ease infinite;
+            background-size: 400% 400%;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .blob {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.2;
+            z-index: -1;
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(50px, 50px) rotate(180deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
         }
         
         .card {
             transition: all 0.3s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transform-style: preserve-3d;
+            perspective: 1000px;
         }
         
         .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            transform: translateY(-10px) rotateX(5deg);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
         
-        .sensor-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            transition: color 0.5s ease;
+        .skill-bar {
+            transition: width 1.5s ease;
         }
         
-        .alert-pulse {
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        
+        .avatar {
+            border: 4px solid var(--primary);
+            box-shadow: 0 0 0 4px var(--secondary), 0 0 0 8px var(--accent);
             animation: pulse 2s infinite;
         }
         
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .social-icon {
+            transition: all 0.3s ease;
+        }
+        
+        .social-icon:hover {
+            transform: translateY(-5px) scale(1.1);
         }
         
         .toggle-checkbox:checked {
             right: 0;
-            border-color: var(--primary);
             background-color: var(--primary);
         }
         
         .toggle-checkbox:checked + .toggle-label {
-            background-color: var(--primary);
+            background-color: var(--dark);
         }
         
-        .gauge {
-            --percentage: 0;
-            --fill-color: var(--primary);
+        .toggle-label {
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link {
             position: relative;
-            width: 100%;
-            height: 120px;
         }
         
-        .gauge-body {
-            width: 100%;
-            height: 0;
-            padding-bottom: 50%;
-            position: relative;
-            border-top-left-radius: 100% 200%;
-            border-top-right-radius: 100% 200%;
-            overflow: hidden;
-            background-color: #e2e8f0;
-        }
-        
-        .gauge-fill {
+        .nav-link::after {
+            content: '';
             position: absolute;
-            top: 100%;
+            bottom: -5px;
             left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
             width: 100%;
-            height: 100%;
-            background-color: var(--fill-color);
-            transform-origin: center top;
-            transform: rotate(0.5turn);
-            transition: transform 0.5s ease-out, background-color 0.5s;
         }
         
-        .gauge-cover {
-            width: 75%;
-            height: 150%;
-            background: white;
-            border-radius: 50%;
-            position: absolute;
-            top: 25%;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            box-shadow: 0 0 5px rgba(0,0,0,0.2) inset;
+        .fade-in {
+            opacity: 0;
+            transition: opacity 0.5s ease;
         }
         
-        .data-updated {
-            animation: highlight 1s;
+        .fade-in.visible {
+            opacity: 1;
         }
         
-        @keyframes highlight {
-            0% { background-color: rgba(59, 130, 246, 0.3); }
-            100% { background-color: transparent; }
+        .typewriter {
+            overflow: hidden;
+            border-right: 3px solid var(--primary);
+            white-space: nowrap;
+            margin: 0 auto;
+            letter-spacing: 2px;
+            animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+        }
+        
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: var(--primary) }
         }
     </style>
 </head>
-<body class="min-h-screen bg-gray-50">
-    <div class="container mx-auto px-4 py-6">
-        <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-center mb-8">
-            <div class="flex items-center mb-4 md:mb-0">
-                <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3">
-                    <i class="fas fa-microchip text-white text-xl"></i>
+<body class="dark:bg-gray-900 dark:text-white">
+    <!-- Blob Background Elements -->
+    <div class="blob top-0 left-0"></div>
+    <div class="blob bottom-0 right-0"></div>
+    <div class="blob top-1/2 right-1/4"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <span class="text-xl font-bold gradient-text">ALEX</span>
                 </div>
-                <h1 class="text-2xl font-bold text-gray-800">IoT Sensor Dashboard</h1>
-            </div>
-            
-            <div class="flex items-center space-x-4">
-                <div class="relative">
-                    <button id="settings-btn" class="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50">
-                        <i class="fas fa-cog text-gray-500"></i>
-                        <span class="hidden md:inline text-gray-600">Settings</span>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-center space-x-8">
+                        <a href="#home" class="nav-link text-gray-700 dark:text-gray-300 hover:text-primary font-medium">Home</a>
+                        <a href="#about" class="nav-link text-gray-700 dark:text-gray-300 hover:text-primary font-medium">About</a>
+                        <a href="#projects" class="nav-link text-gray-700 dark:text-gray-300 hover:text-primary font-medium">Projects</a>
+                        <a href="#skills" class="nav-link text-gray-700 dark:text-gray-300 hover:text-primary font-medium">Skills</a>
+                        <a href="#experience" class="nav-link text-gray-700 dark:text-gray-300 hover:text-primary font-medium">Experience</a>
+                        <a href="#contact" class="nav-link text-gray-700 dark:text-gray-300 hover:text-primary font-medium">Contact</a>
+                        
+                        <!-- Dark Mode Toggle -->
+                        <div class="relative inline-block w-12 mr-2 align-middle select-none">
+                            <input type="checkbox" id="toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                            <label for="toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="menu-btn" class="text-gray-700 dark:text-gray-300 focus:outline-none">
+                        <i class="fas fa-bars text-2xl"></i>
                     </button>
-                    <div id="settings-dropdown" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                        <div class="p-4">
-                            <h3 class="font-medium text-gray-700 mb-2">MQTT Configuration</h3>
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-1">Broker URL</label>
-                                    <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md" value="mqtt://broker.example.com">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-1">Topic Prefix</label>
-                                    <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md" value="iot/device123/">
-                                </div>
-                                <button class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition">Save Settings</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="flex items-center space-x-2">
-                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span class="text-sm text-gray-600">Connected</span>
-                </div>
-            </div>
-        </header>
-        
-        <!-- Main Dashboard Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Ultrasonic Sensor Card -->
-            <div class="card bg-white rounded-xl p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-800">Distance Sensor</h2>
-                        <p class="text-sm text-gray-500">Ultrasonic HC-SR04</p>
-                    </div>
-                    <div class="flex items-center">
-                        <span class="text-xs font-medium px-2 py-1 rounded-full" id="distance-status" style="background-color: #dbeafe; color: #1d4ed8;">Normal</span>
-                    </div>
-                </div>
-                
-                <div class="flex items-end justify-between">
-                    <div>
-                        <div class="sensor-value text-blue-500 mb-1" id="distance-value">--</div>
-                        <div class="text-sm text-gray-500">Current distance</div>
-                    </div>
-                    <div class="gauge mb-2">
-                        <div class="gauge-body">
-                            <div class="gauge-fill" id="distance-gauge"></div>
-                            <div class="gauge-cover" id="distance-percentage">0%</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mt-4 pt-4 border-t border-gray-100">
-                    <div class="flex justify-between text-sm">
-                        <div>
-                            <span class="text-gray-500">Min:</span>
-                            <span class="font-medium ml-1" id="distance-min">0 cm</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Max:</span>
-                            <span class="font-medium ml-1" id="distance-max">400 cm</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Threshold:</span>
-                            <span class="font-medium ml-1" id="distance-threshold">50 cm</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- MPU6050 Sensor Card -->
-            <div class="card bg-white rounded-xl p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-800">Motion Sensor</h2>
-                        <p class="text-sm text-gray-500">MPU6050 Accelerometer</p>
-                    </div>
-                    <div class="flex items-center">
-                        <span class="text-xs font-medium px-2 py-1 rounded-full" id="mpu-status" style="background-color: #fef3c7; color: #92400e;">Warning</span>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="text-center">
-                        <div class="sensor-value text-amber-500 mb-1" id="mpu-x-value">--</div>
-                        <div class="text-sm text-gray-500">X-axis</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="sensor-value text-amber-500 mb-1" id="mpu-y-value">--</div>
-                        <div class="text-sm text-gray-500">Y-axis</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="sensor-value text-amber-500 mb-1" id="mpu-z-value">--</div>
-                        <div class="text-sm text-gray-500">Z-axis</div>
-                    </div>
-                </div>
-                
-                <div class="mt-4 pt-4 border-t border-gray-100">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="text-sm text-gray-500">Tilt Angle:</span>
-                            <span class="font-medium ml-1" id="tilt-angle">0°</span>
-                        </div>
-                        <div class="flex items-center">
-                            <span class="text-sm text-gray-500 mr-2">Alert:</span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" value="" class="sr-only peer" checked>
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Battery Voltage Card -->
-            <div class="card bg-white rounded-xl p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-800">Power Status</h2>
-                        <p class="text-sm text-gray-500">Battery Voltage</p>
-                    </div>
-                    <div class="flex items-center">
-                        <i class="fas fa-battery-three-quarters text-green-500 text-xl"></i>
-                    </div>
-                </div>
-                
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="sensor-value text-green-500 mb-1" id="voltage-value">--</div>
-                        <div class="text-sm text-gray-500">Current voltage</div>
-                    </div>
-                    <div class="w-24">
-                        <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div class="h-full bg-green-500 rounded-full" id="voltage-bar" style="width: 75%"></div>
-                        </div>
-                        <div class="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>9V</span>
-                            <span>12.6V</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mt-4 pt-4 border-t border-gray-100">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <span class="text-sm text-gray-500">Status:</span>
-                            <span class="font-medium ml-1 text-green-500" id="battery-status">Charging</span>
-                        </div>
-                        <div>
-                            <span class="text-sm text-gray-500">Remaining:</span>
-                            <span class="font-medium ml-1" id="battery-remaining">~4h 30m</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Relay Control Card -->
-            <div class="card bg-white rounded-xl p-6 md:col-span-2">
-                <div class="flex justify-between items-center mb-4">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-800">Relay Controls</h2>
-                        <p class="text-sm text-gray-500">Toggle connected devices</p>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <button id="all-on" class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200">All ON</button>
-                        <button id="all-off" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-gray-200">All OFF</button>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <!-- Relay 1 -->
-                    <div class="bg-gray-50 p-4 rounded-lg text-center">
-                        <div class="flex justify-center mb-3">
-                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                <i class="fas fa-lightbulb text-blue-500 text-xl"></i>
-                            </div>
-                        </div>
-                        <h3 class="font-medium text-gray-700 mb-2">Light 1</h3>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" data-relay="1">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-                        </label>
-                    </div>
-                    
-                    <!-- Relay 2 -->
-                    <div class="bg-gray-50 p-4 rounded-lg text-center">
-                        <div class="flex justify-center mb-3">
-                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                <i class="fas fa-fan text-blue-500 text-xl"></i>
-                            </div>
-                        </div>
-                        <h3 class="font-medium text-gray-700 mb-2">Fan</h3>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" data-relay="2">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-                        </label>
-                    </div>
-                    
-                    <!-- Relay 3 -->
-                    <div class="bg-gray-50 p-4 rounded-lg text-center">
-                        <div class="flex justify-center mb-3">
-                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                <i class="fas fa-plug text-blue-500 text-xl"></i>
-                            </div>
-                        </div>
-                        <h3 class="font-medium text-gray-700 mb-2">Outlet</h3>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" data-relay="3">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-                        </label>
-                    </div>
-                    
-                    <!-- Relay 4 -->
-                    <div class="bg-gray-50 p-4 rounded-lg text-center">
-                        <div class="flex justify-center mb-3">
-                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                <i class="fas fa-lightbulb text-blue-500 text-xl"></i>
-                            </div>
-                        </div>
-                        <h3 class="font-medium text-gray-700 mb-2">Light 2</h3>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" data-relay="4">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- GPS Location Card -->
-            <div class="card bg-white rounded-xl p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-800">GPS Location</h2>
-                        <p class="text-sm text-gray-500">Current device position</p>
-                    </div>
-                    <div class="flex items-center">
-                        <i class="fas fa-satellite text-blue-500"></i>
-                    </div>
-                </div>
-                
-                <div class="flex items-center mb-4">
-                    <div class="mr-3">
-                        <i class="fas fa-map-marker-alt text-red-500 text-xl"></i>
-                    </div>
-                    <div>
-                        <div class="font-medium" id="gps-coords">34.0522° N, 118.2437° W</div>
-                        <div class="text-sm text-gray-500" id="gps-address">Los Angeles, California</div>
-                    </div>
-                </div>
-                
-                <div id="map-container" class="h-48 bg-gray-200 rounded-lg overflow-hidden relative">
-                    <div id="map" class="h-full w-full"></div>
-                    <div class="absolute bottom-2 right-2 bg-white px-2 py-1 rounded shadow text-xs">
-                        <span id="gps-accuracy">Accuracy: 5m</span>
-                    </div>
-                </div>
-                
-                <div class="mt-4 pt-4 border-t border-gray-100">
-                    <div class="flex justify-between text-sm">
-                        <div>
-                            <span class="text-gray-500">Last update:</span>
-                            <span class="font-medium ml-1" id="gps-updated">2 seconds ago</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Speed:</span>
-                            <span class="font-medium ml-1" id="gps-speed">0 km/h</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- System Status Card -->
-            <div class="card bg-white rounded-xl p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-800">System Status</h2>
-                        <p class="text-sm text-gray-500">Device connectivity & health</p>
-                    </div>
-                    <div class="flex items-center">
-                        <i class="fas fa-shield-alt text-blue-500"></i>
-                    </div>
-                </div>
-                
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                                <i class="fas fa-wifi text-green-500"></i>
-                            </div>
-                            <div>
-                                <div class="font-medium text-gray-700">WiFi Connection</div>
-                                <div class="text-xs text-gray-500">Connected to HomeNetwork</div>
-                            </div>
-                        </div>
-                        <span class="text-sm font-medium text-green-500">Strong</span>
-                    </div>
-                    
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                                <i class="fas fa-cloud text-blue-500"></i>
-                            </div>
-                            <div>
-                                <div class="font-medium text-gray-700">MQTT Broker</div>
-                                <div class="text-xs text-gray-500">broker.example.com</div>
-                            </div>
-                        </div>
-                        <span class="text-sm font-medium text-green-500">Connected</span>
-                    </div>
-                    
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center mr-3">
-                                <i class="fas fa-microchip text-amber-500"></i>
-                            </div>
-                            <div>
-                                <div class="font-medium text-gray-700">CPU Usage</div>
-                                <div class="text-xs text-gray-500">ESP32</div>
-                            </div>
-                        </div>
-                        <span class="text-sm font-medium text-amber-500">42%</span>
-                    </div>
-                    
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                                <i class="fas fa-memory text-blue-500"></i>
-                            </div>
-                            <div>
-                                <div class="font-medium text-gray-700">Memory</div>
-                                <div class="text-xs text-gray-500">Free heap</div>
-                            </div>
-                        </div>
-                        <span class="text-sm font-medium text-blue-500">124KB</span>
-                    </div>
-                </div>
-                
-                <div class="mt-4 pt-4 border-t border-gray-100">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <span class="text-sm text-gray-500">Uptime:</span>
-                            <span class="font-medium ml-1" id="uptime">2d 4h 36m</span>
-                        </div>
-                        <button class="text-sm text-blue-500 hover:text-blue-600">View Logs</button>
-                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Footer -->
-        <footer class="mt-8 pt-6 border-t border-gray-200">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="text-sm text-gray-500 mb-4 md:mb-0">
-                    © 2023 IoT Sensor Dashboard. All rights reserved.
-                </div>
-                <div class="flex space-x-4">
-                    <button class="text-gray-500 hover:text-gray-700">
-                        <i class="fab fa-github"></i>
-                    </button>
-                    <button class="text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-question-circle"></i>
-                    </button>
-                    <button class="text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-bell"></i>
-                    </button>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white dark:bg-gray-800 shadow-lg">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#home" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Home</a>
+                <a href="#about" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">About</a>
+                <a href="#projects" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Projects</a>
+                <a href="#skills" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Skills</a>
+                <a href="#experience" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Experience</a>
+                <a href="#contact" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Contact</a>
+                <div class="px-3 py-2">
+                    <div class="relative inline-block w-12 align-middle select-none">
+                        <input type="checkbox" id="toggle-mobile" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                        <label for="toggle-mobile" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                    </div>
                 </div>
             </div>
-        </footer>
-    </div>
-
-    <script>
-        // Initialize Google Maps
-        function initMap() {
-            const losAngeles = { lat: 34.0522, lng: -118.2437 };
-            const map = new google.maps.Map(document.getElementById("map"), {
-                zoom: 12,
-                center: losAngeles,
-                styles: [
-                    {
-                        featureType: "all",
-                        elementType: "labels.text.fill",
-                        stylers: [
-                            { saturation: 36 },
-                            { color: "#333333" },
-                            { lightness: 40 }
-                        ]
-                    },
-                    {
-                        featureType: "all",
-                        elementType: "labels.text.stroke",
-                        stylers: [
-                            { visibility: "on" },
-                            { color: "#ffffff" },
-                            { lightness: 16 }
-                        ]
-                    },
-                    {
-                        featureType: "all",
-                        elementType: "labels.icon",
-                        stylers: [{ visibility: "off" }]
-                    },
-                    {
-                        featureType: "administrative",
-                        elementType: "geometry.fill",
-                        stylers: [{ color: "#fefefe" }, { lightness: 20 }]
-                    },
-                    {
-                        featureType: "administrative",
-                        elementType: "geometry.stroke",
-                        stylers: [{ color: "#fefefe" }, { lightness: 17 }, { weight: 1.2 }]
-                    },
-                    {
-                        featureType: "landscape",
-                        elementType: "geometry",
-                        stylers: [{ color: "#f5f5f5" }, { lightness: 20 }]
-                    },
-                    {
-                        featureType: "poi",
-                        elementType: "geometry",
-                        stylers: [{ color: "#f5f5f5" }, { lightness: 21 }]
-                    },
-                    {
-                        featureType: "poi.park",
-                        elementType: "geometry",
-                        stylers: [{ color: "#dedede" }, { lightness: 21 }]
-                    },
-                    {
-                        featureType: "road.highway",
-                        elementType: "geometry.fill",
-                        stylers: [{ color: "#ffffff" }, { lightness: 17 }]
-                    },
-                    {
-                        featureType: "road.highway",
-                        elementType: "geometry.stroke",
-                        stylers: [{ color: "#ffffff" }, { lightness: 29 }, { weight: 0.2 }]
-                    },
-                    {
-                        featureType: "road.arterial",
-                        elementType: "geometry",
-                        stylers: [{ color: "#ffffff" }, { lightness: 18 }]
-                    },
-                    {
-                        featureType: "road.local",
-                        elementType: "geometry",
-                        stylers: [{ color: "#ffffff" }, { lightness: 16 }]
-                    },
-                    {
-                        featureType: "transit",
-                        elementType: "geometry",
-                        stylers: [{ color: "#f2f2f2" }, { lightness: 19 }]
-                    },
-                    {
-                        featureType: "water",
-                        elementType: "geometry",
-                        stylers: [{ color: "#e9e9e9" }, { lightness: 17 }]
-                    }
-                ]
-            });
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section id="home" class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20">
+        <div class="max-w-7xl mx-auto text-center">
+            <div class="flex justify-center mb-8">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=774&q=80" 
+                     alt="Profile" 
+                     class="avatar w-40 h-40 rounded-full object-cover">
+            </div>
+            <h1 class="text-4xl md:text-6xl font-bold mb-4">
+                <span class="gradient-text">Hi, I'm Alex</span>
+            </h1>
+            <div class="typewriter text-xl md:text-3xl font-medium mb-8">
+                I build cool stuff on the internet
+            </div>
+            <p class="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8">
+                Digital creator | Web developer | Design enthusiast | Coffee addict ☕
+            </p>
+            <div class="flex justify-center space-x-4">
+                <a href="#projects" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-medium hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                    View My Work
+                </a>
+                <a href="#contact" class="px-6 py-3 border-2 border-purple-500 text-purple-500 dark:text-white rounded-full font-medium hover:bg-purple-500 hover:text-white transition-all duration-300 transform hover:scale-105">
+                    Let's Vibe 🤝
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-gray-50 dark:bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    <span class="gradient-text">About Me</span>
+                </h2>
+                <div class="w-20 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto"></div>
+            </div>
             
-            const marker = new google.maps.Marker({
-                position: losAngeles,
-                map: map,
-                icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 8,
-                    fillColor: "#4285F4",
-                    fillOpacity: 1,
-                    strokeWeight: 2,
-                    strokeColor: "#ffffff"
+            <div class="flex flex-col md:flex-row items-center gap-12">
+                <div class="md:w-1/3 flex justify-center">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=774&q=80" 
+                         alt="About Me" 
+                         class="rounded-xl shadow-xl w-full max-w-md hover:rotate-2 transition-transform duration-300">
+                </div>
+                <div class="md:w-2/3">
+                    <h3 class="text-2xl font-bold mb-4">Who am I?</h3>
+                    <p class="text-gray-600 dark:text-gray-300 mb-6">
+                        I'm a 22-year-old digital creator with a passion for building beautiful, functional web experiences. 
+                        Currently studying Computer Science while freelancing and working on personal projects that excite me.
+                    </p>
+                    <p class="text-gray-600 dark:text-gray-300 mb-6">
+                        When I'm not coding, you can find me taking aesthetic photos for Instagram, exploring new coffee shops, 
+                        or binge-watching anime. I believe in creating with purpose and making technology more human-centered.
+                    </p>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm">
+                            <h4 class="font-bold text-purple-500 mb-2">Fun Fact #1</h4>
+                            <p class="text-sm">I can solve a Rubik's cube in under 2 minutes 🎯</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm">
+                            <h4 class="font-bold text-pink-500 mb-2">Fun Fact #2</h4>
+                            <p class="text-sm">I have a collection of 50+ funko pops 🧸</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-lg">
+                            <h4 class="font-bold text-blue-500 mb-2">Fun Fact #3</h4>
+                            <p class="text-sm">I'm learning Japanese (konnichiwa!) 🇯🇵</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm">
+                            <h4 class="font-bold text-green-500 mb-2">Fun Fact #4</h4>
+                            <p class="text-sm">I make a mean avocado toast 🥑</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-4">
+                        <span class="px-4 py-2 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-sm">Coffee Enthusiast</span>
+                        <span class="px-4 py-2 bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 rounded-full text-sm">Anime Lover</span>
+                        <span class="px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">Photography</span>
+                        <span class="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm">Minimalism</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Projects Section -->
+    <section id="projects" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    <span class="gradient-text">My Projects</span>
+                </h2>
+                <div class="w-20 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto"></div>
+                <p class="text-gray-600 dark:text-gray-300 mt-4 max-w-2xl mx-auto">
+                    Here are some of my favorite projects I've worked on. Each one was a learning experience and helped me grow as a developer.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Project 1 -->
+                <div class="card bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div class="h-48 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" 
+                             alt="Project 1" 
+                             class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xl font-bold">EcoTrack</h3>
+                            <span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">Live</span>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                            A sustainability app that helps users track and reduce their carbon footprint with personalized recommendations.
+                        </p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">React</span>
+                            <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">Node.js</span>
+                            <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">MongoDB</span>
+                        </div>
+                        <div class="flex space-x-3">
+                            <a href="#" class="text-purple-500 hover:text-purple-700 dark:hover:text-purple-400">
+                                <i class="fab fa-github"></i>
+                            </a>
+                            <a href="#" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Project 2 -->
+                <div class="card bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div class="h-48 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" 
+                             alt="Project 2" 
+                             class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xl font-bold">ArtGallery</h3>
+                            <span class="text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-full">In Progress</span>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                            An interactive digital art gallery showcasing emerging artists with VR exhibition capabilities.
+                        </p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">Three.js</span>
+                            <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">React</span>
+                            <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">Firebase</span>
+                        </div>
+                        <div class="flex space-x-3">
+                            <a href="#" class="text-purple-500 hover:text-purple-700 dark:hover:text-purple-400">
+                                <i class="fab fa-github"></i>
+                            </a>
+                            <a href="#" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Project 3 -->
+                <div class="card bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div class="h-48 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" 
+                             alt="Project 3" 
+                             class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xl font-bold">TaskFlow</h3>
+                            <span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">Live</span>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                            A minimalist productivity app with natural language processing for intuitive task management.
+                        </p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">Vue.js</span>
+                            <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">Python</span>
+                            <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">Django</span>
+                        </div>
+                        <div class="flex space-x-3">
+                            <a href="#" class="text-purple-500 hover:text-purple-700 dark:hover:text-purple-400">
+                                <i class="fab fa-github"></i>
+                            </a>
+                            <a href="#" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-12">
+                <a href="#" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                    View All Projects
+                    <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Skills Section -->
+    <section id="skills" class="py-20 bg-gray-50 dark:bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    <span class="gradient-text">My Skills</span>
+                </h2>
+                <div class="w-20 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto"></div>
+                <p class="text-gray-600 dark:text-gray-300 mt-4 max-w-2xl mx-auto">
+                    Here's what I bring to the table. Always learning and expanding my skill set.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div>
+                    <h3 class="text-xl font-bold mb-6">Technical Skills</h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium">HTML/CSS</span>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">95%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                <div class="skill-bar bg-purple-500 h-2.5 rounded-full" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium">JavaScript</span>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">90%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                <div class="skill-bar bg-pink-500 h-2.5 rounded-full" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium">React</span>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">85%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                <div class="skill-bar bg-blue-500 h-2.5 rounded-full" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium">Node.js</span>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">80%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                <div class="skill-bar bg-green-500 h-2.5 rounded-full" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium">UI/UX Design</span>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">88%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                <div class="skill-bar bg-yellow-500 h-2.5 rounded-full" style="width: 88%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold mb-6">Soft Skills</h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm flex items-center">
+                            <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900 mr-4">
+                                <i class="fas fa-comments text-purple-500 dark:text-purple-300"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold">Communication</h4>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Clear & effective</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm flex items-center">
+                            <div class="p-3 rounded-full bg-pink-100 dark:bg-pink-900 mr-4">
+                                <i class="fas fa-users text-pink-500 dark:text-pink-300"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold">Teamwork</h4>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Collaborative spirit</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm flex items-center">
+                            <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900 mr-4">
+                                <i class="fas fa-lightbulb text-blue-500 dark:text-blue-300"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold">Problem Solving</h4>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Creative solutions</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm flex items-center">
+                            <div class="p-3 rounded-full bg-green-100 dark:bg-green-900 mr-4">
+                                <i class="fas fa-clock text-green-500 dark:text-green-300"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold">Time Management</h4>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Efficient workflow</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm flex items-center">
+                            <div class="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900 mr-4">
+                                <i class="fas fa-brain text-yellow-500 dark:text-yellow-300"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold">Adaptability</h4>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Quick learner</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm flex items-center">
+                            <div class="p-3 rounded-full bg-red-100 dark:bg-red-900 mr-4">
+                                <i class="fas fa-fire text-red-500 dark:text-red-300"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold">Passion</h4>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Driven by purpose</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-12">
+                <h3 class="text-xl font-bold mb-6 text-center">Tools & Technologies</h3>
+                <div class="flex flex-wrap justify-center gap-4">
+                    <div class="tool-icon p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                        <i class="fab fa-figma text-3xl text-purple-500"></i>
+                    </div>
+                    <div class="tool-icon p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                        <i class="fab fa-git-alt text-3xl text-orange-500"></i>
+                    </div>
+                    <div class="tool-icon p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                        <i class="fab fa-npm text-3xl text-red-500"></i>
+                    </div>
+                    <div class="tool-icon p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                        <i class="fab fa-docker text-3xl text-blue-500"></i>
+                    </div>
+                    <div class="tool-icon p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                        <i class="fab fa-aws text-3xl text-yellow-500"></i>
+                    </div>
+                    <div class="tool-icon p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                        <i class="fas fa-database text-3xl text-green-500"></i>
+                    </div>
+                    <div class="tool-icon p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                        <i class="fab fa-adobe text-3xl text-pink-500"></i>
+                    </div>
+                    <div class="tool-icon p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                        <i class="fab fa-slack text-3xl text-purple-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Experience Section -->
+    <section id="experience" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    <span class="gradient-text">Experience & Education</span>
+                </h2>
+                <div class="w-20 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto"></div>
+                <p class="text-gray-600 dark:text-gray-300 mt-4 max-w-2xl mx-auto">
+                    My journey so far. From classrooms to real-world projects.
+                </p>
+            </div>
+            
+            <div class="relative">
+                <!-- Timeline line -->
+                <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-pink-500 transform -translate-x-1/2"></div>
+                
+                <!-- Timeline items -->
+                <div class="space-y-8 md:space-y-16">
+                    <!-- Item 1 -->
+                    <div class="relative md:w-1/2 ml-auto md:pl-16 pl-8">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center mb-2">
+                                <div class="p-2 rounded-full bg-purple-100 dark:bg-purple-900 mr-4">
+                                    <i class="fas fa-briefcase text-purple-500 dark:text-purple-300"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg">Frontend Developer</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">TechStart Inc. • 2022 - Present</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-300">
+                                Developing responsive web applications using React and Next.js. Collaborating with designers to implement pixel-perfect UIs while ensuring optimal performance.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Item 2 -->
+                    <div class="relative md:w-1/2 mr-auto md:pr-16 pl-8">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center mb-2">
+                                <div class="p-2 rounded-full bg-blue-100 dark:bg-blue-900 mr-4">
+                                    <i class="fas fa-graduation-cap text-blue-500 dark:text-blue-300"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg">B.Sc. Computer Science</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">State University • 2019 - 2023</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-300">
+                                Specialized in Human-Computer Interaction and Web Technologies. Graduated with honors while working on freelance projects and student organizations.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Item 3 -->
+                    <div class="relative md:w-1/2 ml-auto md:pl-16 pl-8">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center mb-2">
+                                <div class="p-2 rounded-full bg-pink-100 dark:bg-pink-900 mr-4">
+                                    <i class="fas fa-laptop-code text-pink-500 dark:text-pink-300"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg">Web Dev Intern</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">DigitalAgency • Summer 2021</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-300">
+                                Built and maintained client websites using WordPress and custom solutions. Gained experience in client communication, project management, and agile workflows.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Item 4 -->
+                    <div class="relative md:w-1/2 mr-auto md:pr-16 pl-8">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center mb-2">
+                                <div class="p-2 rounded-full bg-green-100 dark:bg-green-900 mr-4">
+                                    <i class="fas fa-certificate text-green-500 dark:text-green-300"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg">UX Design Certification</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Google Coursera • 2020</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-300">
+                                Completed comprehensive training in user-centered design principles, prototyping, and usability testing to complement my technical skills.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-16">
+                <a href="#" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                    Download Full Resume
+                    <i class="fas fa-download ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Contact Section -->
+    <section id="contact" class="py-20 bg-gray-50 dark:bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    <span class="gradient-text">Let's Connect</span>
+                </h2>
+                <div class="w-20 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto"></div>
+                <p class="text-gray-600 dark:text-gray-300 mt-4 max-w-2xl mx-auto">
+                    Have a project in mind or just want to chat? I'd love to hear from you!
+                </p>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-12">
+                <div class="md:w-1/2">
+                    <form class="space-y-6">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Your Name</label>
+                            <input type="text" id="name" name="name" class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white" placeholder="What should I call you?">
+                        </div>
+                        
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
+                            <input type="email" id="email" name="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white" placeholder="Where can I reach you?">
+                        </div>
+                        
+                        <div>
+                            <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                            <input type="text" id="subject" name="subject" class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white" placeholder="What's this about?">
+                        </div>
+                        
+                        <div>
+                            <label for="message" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message</label>
+                            <textarea id="message" name="message" rows="5" class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white" placeholder="Tell me everything..."></textarea>
+                        </div>
+                        
+                        <div>
+                            <button type="submit" class="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-full hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105">
+                                Send Message <i class="fas fa-paper-plane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="md:w-1/2">
+                    <div class="bg-white dark:bg-gray-700 p-8 rounded-xl shadow-lg h-full">
+                        <h3 class="text-2xl font-bold mb-6">Other Ways to Reach Me</h3>
+                        
+                        <div class="space-y-6">
+                            <div class="flex items-start">
+                                <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900 mr-4">
+                                    <i class="fas fa-envelope text-purple-500 dark:text-purple-300"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold">Email</h4>
+                                    <a href="mailto:hello@alex.dev" class="text-purple-500 dark:text-purple-300 hover:underline">hello@alex.dev</a>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900 mr-4">
+                                    <i class="fas fa-phone-alt text-blue-500 dark:text-blue-300"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold">Phone</h4>
+                                    <a href="tel:+1234567890" class="text-blue-500 dark:text-blue-300 hover:underline">+1 (234) 567-890</a>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <div class="p-3 rounded-full bg-pink-100 dark:bg-pink-900 mr-4">
+                                    <i class="fas fa-map-marker-alt text-pink-500 dark:text-pink-300"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold">Location</h4>
+                                    <p class="text-gray-600 dark:text-gray-300">San Francisco, CA</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-12">
+                            <h4 class="font-bold text-lg mb-4">Follow Me</h4>
+                            <div class="flex space-x-4">
+                                <a href="#" class="social-icon p-3 bg-gray-100 dark:bg-gray-600 rounded-full text-gray-700 dark:text-gray-200 hover:bg-purple-500 hover:text-white">
+                                    <i class="fab fa-github"></i>
+                                </a>
+                                <a href="#" class="social-icon p-3 bg-gray-100 dark:bg-gray-600 rounded-full text-gray-700 dark:text-gray-200 hover:bg-blue-500 hover:text-white">
+                                    <i class="fab fa-linkedin-in"></i>
+                                </a>
+                                <a href="#" class="social-icon p-3 bg-gray-100 dark:bg-gray-600 rounded-full text-gray-700 dark:text-gray-200 hover:bg-pink-500 hover:text-white">
+                                    <i class="fab fa-instagram"></i>
+                                </a>
+                                <a href="#" class="social-icon p-3 bg-gray-100 dark:bg-gray-600 rounded-full text-gray-700 dark:text-gray-200 hover:bg-blue-400 hover:text-white">
+                                    <i class="fab fa-twitter"></i>
+                                </a>
+                                <a href="#" class="social-icon p-3 bg-gray-100 dark:bg-gray-600 rounded-full text-gray-700 dark:text-gray-200 hover:bg-red-500 hover:text-white">
+                                    <i class="fab fa-youtube"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="py-8 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <span class="text-xl font-bold gradient-text">ALEX</span>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Building digital experiences with purpose.</p>
+                </div>
+                
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-purple-500 dark:hover:text-purple-400">
+                        <i class="fab fa-github"></i>
+                    </a>
+                    <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400">
+                        <i class="fab fa-linkedin-in"></i>
+                    </a>
+                    <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-pink-500 dark:hover:text-pink-400">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-blue-400 dark:hover:text-blue-300">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-500 dark:text-gray-400">
+                <p>© 2023 Alex. All rights reserved. Made with <i class="fas fa-heart text-red-500"></i> and good vibes.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Back to Top Button -->
+    <button id="back-to-top" class="fixed bottom-8 right-8 p-3 bg-purple-500 text-white rounded-full shadow-lg hover:bg-purple-600 transition-all opacity-0 invisible">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+    
+    <script>
+        // Dark mode toggle
+        const toggle = document.getElementById('toggle');
+        const toggleMobile = document.getElementById('toggle-mobile');
+        const html = document.documentElement;
+        
+        // Check for saved user preference or use system preference
+        if (localStorage.getItem('darkMode') === 'true' || 
+            (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+            toggle.checked = true;
+            if (toggleMobile) toggleMobile.checked = true;
+        }
+        
+        // Toggle dark mode
+        function toggleDarkMode() {
+            html.classList.toggle('dark');
+            localStorage.setItem('darkMode', html.classList.contains('dark'));
+        }
+        
+        toggle.addEventListener('change', toggleDarkMode);
+        if (toggleMobile) toggleMobile.addEventListener('change', toggleDarkMode);
+        
+        // Mobile menu toggle
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        // Back to top button
+        const backToTopBtn = document.getElementById('back-to-top');
+        
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                backToTopBtn.classList.remove('opacity-0', 'invisible');
+                backToTopBtn.classList.add('opacity-100', 'visible');
+            } else {
+                backToTopBtn.classList.remove('opacity-100', 'visible');
+                backToTopBtn.classList.add('opacity-0', 'invisible');
+            }
+        });
+        
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                    
+                    // Close mobile menu if open
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                    }
                 }
             });
-            
-            window.map = map;
-            window.marker = marker;
-        }
-        
-        // Toggle settings dropdown
-        document.getElementById('settings-btn').addEventListener('click', function() {
-            const dropdown = document.getElementById('settings-dropdown');
-            dropdown.classList.toggle('hidden');
         });
         
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const settingsBtn = document.getElementById('settings-btn');
-            const dropdown = document.getElementById('settings-dropdown');
-            
-            if (!settingsBtn.contains(event.target) && !dropdown.contains(event.target)) {
-                dropdown.classList.add('hidden');
-            }
-        });
+        // Scroll animation
+        const fadeElements = document.querySelectorAll('.fade-in');
         
-        // Relay controls
-        document.querySelectorAll('[data-relay]').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const relayNum = this.getAttribute('data-relay');
-                const isOn = this.checked;
-                console.log(`Relay ${relayNum} turned ${isOn ? 'ON' : 'OFF'}`);
+        function checkScroll() {
+            fadeElements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const windowHeight = window.innerHeight;
                 
-                // Here you would send MQTT message to control the relay
-                // mqttPublish(`iot/device123/relay/${relayNum}`, isOn ? '1' : '0');
+                if (elementTop < windowHeight - 100) {
+                    element.classList.add('visible');
+                }
             });
-        });
-        
-        // All ON/OFF buttons
-        document.getElementById('all-on').addEventListener('click', function() {
-            document.querySelectorAll('[data-relay]').forEach(checkbox => {
-                checkbox.checked = true;
-                const relayNum = checkbox.getAttribute('data-relay');
-                console.log(`Relay ${relayNum} turned ON`);
-                // mqttPublish(`iot/device123/relay/${relayNum}`, '1');
-            });
-        });
-        
-        document.getElementById('all-off').addEventListener('click', function() {
-            document.querySelectorAll('[data-relay]').forEach(checkbox => {
-                checkbox.checked = false;
-                const relayNum = checkbox.getAttribute('data-relay');
-                console.log(`Relay ${relayNum} turned OFF`);
-                // mqttPublish(`iot/device123/relay/${relayNum}`, '0');
-            });
-        });
-        
-        // Simulate real-time data updates
-        function simulateDataUpdates() {
-            // Ultrasonic sensor
-            const distance = Math.floor(Math.random() * 400);
-            updateSensorValue('distance-value', `${distance} cm`, '#3b82f6');
-            
-            // Update gauge
-            const distancePercentage = Math.min(100, Math.floor((distance / 400) * 100));
-            document.getElementById('distance-percentage').textContent = `${distancePercentage}%`;
-            document.getElementById('distance-gauge').style.transform = `rotate(${0.5 + (distancePercentage / 100)}turn)`;
-            
-            // Update status
-            if (distance < 30) {
-                document.getElementById('distance-status').textContent = 'Close';
-                document.getElementById('distance-status').style.backgroundColor = '#fee2e2';
-                document.getElementById('distance-status').style.color = '#b91c1c';
-            } else {
-                document.getElementById('distance-status').textContent = 'Normal';
-                document.getElementById('distance-status').style.backgroundColor = '#dbeafe';
-                document.getElementById('distance-status').style.color = '#1d4ed8';
-            }
-            
-            // MPU6050 sensor
-            const xVal = (Math.random() * 20 - 10).toFixed(2);
-            const yVal = (Math.random() * 20 - 10).toFixed(2);
-            const zVal = (Math.random() * 20 - 10).toFixed(2);
-            
-            updateSensorValue('mpu-x-value', xVal, '#f59e0b');
-            updateSensorValue('mpu-y-value', yVal, '#f59e0b');
-            updateSensorValue('mpu-z-value', zVal, '#f59e0b');
-            
-            // Calculate tilt angle
-            const tiltAngle = Math.floor(Math.sqrt(xVal*xVal + yVal*yVal + zVal*zVal));
-            document.getElementById('tilt-angle').textContent = `${tiltAngle}°`;
-            
-            // Update status
-            if (tiltAngle > 15) {
-                document.getElementById('mpu-status').textContent = 'Tilt Alert';
-                document.getElementById('mpu-status').style.backgroundColor = '#fef3c7';
-                document.getElementById('mpu-status').style.color = '#92400e';
-            } else {
-                document.getElementById('mpu-status').textContent = 'Stable';
-                document.getElementById('mpu-status').style.backgroundColor = '#ecfdf5';
-                document.getElementById('mpu-status').style.color = '#065f46';
-            }
-            
-            // Battery voltage
-            const voltage = (Math.random() * 3.6 + 9).toFixed(2);
-            updateSensorValue('voltage-value', `${voltage} V`, '#10b981');
-            
-            // Update battery bar
-            const voltagePercentage = Math.min(100, Math.floor(((voltage - 9) / 3.6) * 100));
-            document.getElementById('voltage-bar').style.width = `${voltagePercentage}%`;
-            
-            // Update battery status
-            if (voltagePercentage < 20) {
-                document.getElementById('battery-status').textContent = 'Low';
-                document.getElementById('battery-status').className = 'font-medium ml-1 text-red-500';
-                document.getElementById('voltage-bar').style.backgroundColor = '#ef4444';
-            } else if (voltagePercentage < 60) {
-                document.getElementById('battery-status').textContent = 'Medium';
-                document.getElementById('battery-status').className = 'font-medium ml-1 text-amber-500';
-                document.getElementById('voltage-bar').style.backgroundColor = '#f59e0b';
-            } else {
-                document.getElementById('battery-status').textContent = 'Good';
-                document.getElementById('battery-status').className = 'font-medium ml-1 text-green-500';
-                document.getElementById('voltage-bar').style.backgroundColor = '#10b981';
-            }
-            
-            // GPS updates
-            const lat = 34.0522 + (Math.random() * 0.02 - 0.01);
-            const lng = -118.2437 + (Math.random() * 0.02 - 0.01);
-            document.getElementById('gps-coords').textContent = `${lat.toFixed(4)}° N, ${Math.abs(lng).toFixed(4)}° W`;
-            
-            // Update map marker if map is loaded
-            if (window.marker) {
-                const newPos = new google.maps.LatLng(lat, lng);
-                window.marker.setPosition(newPos);
-                window.map.panTo(newPos);
-            }
-            
-            // Update GPS accuracy
-            const accuracy = Math.floor(Math.random() * 20);
-            document.getElementById('gps-accuracy').textContent = `Accuracy: ${accuracy}m`;
-            
-            // Update GPS speed
-            const speed = Math.floor(Math.random() * 60);
-            document.getElementById('gps-speed').textContent = `${speed} km/h`;
-            
-            // Update last updated time
-            document.getElementById('gps-updated').textContent = 'Just now';
-            
-            // Update uptime
-            setTimeout(simulateDataUpdates, 3000);
         }
         
-        // Helper function to update sensor values with animation
-        function updateSensorValue(elementId, newValue, color) {
-            const element = document.getElementById(elementId);
-            element.textContent = newValue;
-            element.style.color = color;
-            element.classList.add('data-updated');
-            
+        // Initial check
+        checkScroll();
+        
+        // Check on scroll
+        window.addEventListener('scroll', checkScroll);
+        
+        // Typewriter effect
+        setTimeout(() => {
+            document.querySelector('.typewriter').style.animation = 'none';
             setTimeout(() => {
-                element.classList.remove('data-updated');
+                document.querySelector('.typewriter').style.borderRight = 'none';
             }, 1000);
-        }
-        
-        // Start simulating data updates
-        setTimeout(simulateDataUpdates, 1000);
+        }, 3500);
     </script>
 </body>
 </html>
